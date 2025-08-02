@@ -1,6 +1,18 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { type Server } from "bun";
+import { startServer } from "../src/index";
 
 describe("Bun WebSocket server", () => {
+  let server: Server;
+
+  beforeAll(() => {
+    server = startServer();
+  });
+
+  afterAll(() => {
+    server.stop();
+  });
+
   it("should handle send_message type and respond correctly", (done) => {
     const ws = new WebSocket("ws://localhost:6974");
 
