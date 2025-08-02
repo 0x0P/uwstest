@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 
 describe("Bun WebSocket server", () => {
   it("should handle send_message type and respond correctly", (done) => {
-    const ws = new WebSocket("ws://localhost:9001");
+    const ws = new WebSocket("ws://localhost:6974");
 
     ws.onopen = () => {
       const message = {
