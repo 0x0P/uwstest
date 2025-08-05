@@ -30,8 +30,6 @@ export class WebSocketRouter {
     controller: any,
     type: string
   ): ((ws: AppWebSocket, payload: any) => void) | null {
-    // This is a simple lookup. A more advanced version might use metadata
-    // stored via decorators to map message types to handler methods.
     const handlerName = `handle${this.toPascalCase(type)}`;
     if (typeof controller[handlerName] === "function") {
       return controller[handlerName];
