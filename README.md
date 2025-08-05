@@ -1,247 +1,131 @@
-# UWS Test - Bun 기반 WebSocket 서버 프레임워크
+# Bun.js 웹소켓 프레임워크
 
-\*이 문서는 Claude 4 sonnet으로 작성되었습니다.
+이 프로젝트는 Bun.js, TypeScript, 그리고 tsyringe를 기반으로 구축된 확장 가능하고 타입-안전한 웹소켓 서버 프레임워크입니다. 의존성 주입(DI)과 동적 메시지 라우팅을 통해 깔끔하고 유지보수하기 쉬운 코드 작성을 목표로 합니다.
 
-## 📋 개요
+## 📂 프로젝트 구조
 
-UWS Test는 **Bun** 런타임을 기반으로 한 현대적인 WebSocket 서버 프레임워크입니다.
+```
+.
+├── src
+│   ├── core/                # 프레임워크 핵심 로직 (서버, 라우터)
+│   │   ├── server.service.ts
+│   │   └── websocket-router.ts
+│   ├── features/            # 기능별 도메인 로직 (컨트롤러)
+│   │   └── message/
+│   │       └── message.controller.ts
+│   ├── shared/              # 공용 타입 및 유틸리티
+│   │   └── types/
+│   │       └── index.ts
+│   └── index.ts             # 애플리케이션 진입점, DI 컨테이너 설정
+├── package.json
+└── tsconfig.json
+```
 
-### 🌟 주요 특징
+## 🚀 시작하기
 
-- ⚡ **고성능**: Bun의 빠른 WebSocket 구현 활용
-- 🔒 **타입 안전성**: TypeScript + Zod를 통한 강력한 타입 검증
-- 🏗️ **의존성 주입**: TSyringe를 활용한 모듈화된 아키텍처
-- 🎯 **자동 라우팅**: 메시지 타입 기반 핸들러 자동 매핑
-- 🛡️ **에러 처리**: 강력한 에러 처리 및 검증 시스템
+### 요구사항
 
-## 🚀 빠른 시작
+- [Bun](https://bun.sh/)
 
-### 설치 및 실행
+### 설치
 
 ```bash
-# 의존성 설치
 bun install
+```
 
-# 개발 서버 시작 (핫 리로드)
+### 서버 실행
+
+```bash
 bun start
 ```
 
-서버가 `http://localhost:6974`에서 실행됩니다.
+서버는 기본적으로 `6974` 포트에서 실행됩니다.
 
-### 환경 변수
+## 💡 사용 방법
 
-`.env` 파일을 생성하여 포트를 설정할 수 있습니다:
+### 1. 메시지 형식
 
-```env
-PORT=6974
-```
-
-## 🏗️ 아키텍처
-
-### 핵심 구조
-
-```
-src/
-├── core/                    # 핵심 서비스
-│   ├── server.service.ts    # WebSocket 서버 관리
-│   └── websocket-router.ts  # 메시지 라우팅
-├── features/                # 기능별 모듈
-│   └── message/
-│       └── message.controller.ts
-├── shared/
-│   └── types/               # 공유 타입 정의
-└── index.ts                 # 애플리케이션 엔트리 포인트
-```
-
-### 메시지 처리 흐름
-
-1. **클라이언트 연결**: WebSocket 연결 시 고유 `userId` 할당
-2. **메시지 수신**: JSON 형태의 메시지 수신
-3. **라우팅**: 메시지 `type`을 기반으로 적절한 핸들러 찾기
-4. **처리**: 컨트롤러에서 payload 검증 및 비즈니스 로직 실행
-5. **응답**: 클라이언트에게 결과 전송
-
-## 📡 API 사용법
-
-### 메시지 형식
-
-모든 WebSocket 메시지는 다음 형식을 따릅니다:
-
-```typescript
-{
-  type: string,     // 메시지 타입 (핸들러 매핑에 사용)
-  payload: any      // 실제 데이터
-}
-```
-
-### 지원되는 메시지 타입
-
-#### 1. `send_message` - 메시지 전송
-
-**요청:**
+클라이언트와 서버는 다음 JSON 형식의 메시지를 주고받습니다.
 
 ```json
 {
-  "type": "send_message",
+  "type": "event_name_in_snake_case",
   "payload": {
-    "content": "안녕하세요!"
+    "key": "value"
   }
 }
 ```
 
-**응답:**
+- `type`: 처리할 이벤트의 종류를 나타냅니다. `snake_case`로 작성합니다.
+- `payload`: 이벤트에 필요한 데이터를 담습니다.
 
-```json
-{
-  "type": "message_confirmation",
-  "payload": {
-    "status": "ok",
-    "content": "Message \"안녕하세요!\" received."
-  }
-}
-```
+### 2. 메시지 핸들러 추가하기
 
-#### 2. `test` - 서버 테스트
+새로운 종류의 메시지를 처리하려면 해당 기능을 담당하는 컨트롤러에 핸들러 메서드를 추가하면 됩니다. 라우터는 메시지의 `type`을 `PascalCase`로 변환하고 앞에 `handle`을 붙여 일치하는 이름의 메서드를 찾아 실행합니다.
 
-**요청:**
+예를 들어, `type`이 `new_event`인 메시지를 처리하고 싶다면, 컨트롤러에 `handleNewEvent`라는 이름의 메서드를 만들면 됩니다.
 
-```json
-{
-  "type": "test",
-  "payload": {}
-}
-```
+**예시: `handleJoinRoom` 핸들러 추가**
 
-**응답:**
+1.  **`message.controller.ts` 파일에 메서드를 추가합니다.**
 
-```json
-{
-  "type": "test_response",
-  "payload": {
-    "message": "Test successful!"
-  }
-}
-```
+    ```typescript
+    // src/features/message/message.controller.ts
 
-### 에러 응답
+    import { z } from "zod";
 
-잘못된 요청이나 검증 실패 시:
+    // ... 기존 코드
 
-```json
-{
-  "type": "error",
-  "payload": {
-    "message": "Validation failed",
-    "errors": {
-      "content": ["Required"]
+    const JoinRoomPayloadSchema = z.object({
+      roomId: z.string(),
+    });
+
+    @singleton()
+    export class MessageController {
+      // ... 기존 handleSendMessage, handleTest 메서드
+
+      public handleJoinRoom(ws: AppWebSocket, payload: unknown) {
+        const validation = JoinRoomPayloadSchema.safeParse(payload);
+        if (!validation.success) {
+          this.sendValidationError(ws, validation.error);
+          return;
+        }
+
+        const { roomId } = validation.data;
+        console.log(`User ${ws.data.userId} joined room ${roomId}`);
+
+        ws.send(
+          JSON.stringify({
+            type: "room_joined_confirmation",
+            payload: {
+              status: "success",
+              roomId: roomId,
+            },
+          })
+        );
+      }
+
+      private sendValidationError(ws: AppWebSocket, error: z.ZodError) {
+        // ... 기존 코드
+      }
     }
-  }
-}
-```
+    ```
 
-## 🛠️ 개발 가이드
+2.  **클라이언트에서 메시지 보내기**
 
-### 새로운 메시지 핸들러 추가
+    이제 클라이언트는 `type`을 `join_room`으로 설정하여 서버에 메시지를 보낼 수 있습니다.
 
-1. **핸들러 메서드 추가**:
+    ```javascript
+    // 클라이언트 측 코드 예시
+    const ws = new WebSocket("ws://localhost:6974");
 
-   ```typescript
-   // src/features/message/message.controller.ts
-   public handleMyNewMessage(ws: AppWebSocket, payload: unknown) {
-     // 로직 구현
-   }
-   ```
-
-2. **스키마 정의** (선택사항):
-
-   ```typescript
-   const MyNewMessageSchema = z.object({
-     // 필드 정의
-   });
-   ```
-
-3. **클라이언트에서 호출**:
-   ```json
-   {
-     "type": "my_new_message",
-     "payload": {
-       /* 데이터 */
-     }
-   }
-   ```
-
-### 자동 핸들러 매핑 규칙
-
-메시지 타입이 자동으로 핸들러 메서드명으로 변환됩니다:
-
-- `send_message` → `handleSendMessage`
-- `user_login` → `handleUserLogin`
-- `get_data` → `handleGetData`
-
-### 새로운 컨트롤러 추가
-
-1. **컨트롤러 생성**:
-
-   ```typescript
-   import { singleton } from "tsyringe";
-
-   @singleton()
-   export class UserController {
-     public handleUserLogin(ws: AppWebSocket, payload: unknown) {
-       // 로그인 로직
-     }
-   }
-   ```
-
-2. **의존성 등록**:
-   ```typescript
-   // src/index.ts
-   container.register("UserController", {
-     useClass: UserController,
-   });
-   ```
-
-## 📦 주요 의존성
-
-- **[Bun](https://bun.sh/)**: JavaScript 런타임 및 패키지 매니저
-- **[TSyringe](https://github.com/microsoft/tsyringe)**: 의존성 주입 컨테이너
-- **[Zod](https://zod.dev/)**: 스키마 검증 라이브러리
-- **[TypeScript](https://www.typescriptlang.org/)**: 정적 타입 시스템
-
-## 🧪 테스트
-
-WebSocket 연결 테스트는 다음과 같은 도구를 사용할 수 있습니다:
-
-- **브라우저 콘솔**:
-
-  ```javascript
-  const ws = new WebSocket("ws://localhost:6974");
-  ws.onmessage = (event) => console.log(JSON.parse(event.data));
-  ws.send(
-    JSON.stringify({
-      type: "test",
-      payload: {},
-    })
-  );
-  ```
-
-- **WebSocket 클라이언트 도구** (Postman, Insomnia 등)
-
-## 🔧 설정
-
-### TypeScript 설정
-
-프로젝트는 ES 모듈과 데코레이터를 사용하도록 설정되어 있습니다. `tsconfig.json`에서 추가 설정을 변경할 수 있습니다.
-
-### 환경별 설정
-
-- **개발**: `bun --hot src/index.ts` (핫 리로드 활성화)
-- **프로덕션**: `bun src/index.ts`
-
-## 📝 라이선스
-
-이 프로젝트는 개인 프로젝트입니다.
-
----
-
-**💡 팁**: WebSocket 연결 시 각 클라이언트에게 고유한 `userId`가 자동으로 할당되어 개별 클라이언트 식별이 가능합니다.
+    ws.onopen = () => {
+      const message = {
+        type: "join_room",
+        payload: {
+          roomId: "general-chat-101",
+        },
+      };
+      ws.send(JSON.stringify(message));
+    };
+    ```
