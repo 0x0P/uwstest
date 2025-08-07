@@ -131,3 +131,32 @@ bun start
       ws.send(JSON.stringify(message));
     };
     ```
+
+## 🌊 핵심 로직 흐름
+
+클라이언트로부터 메시지가 들어왔을 때의 처리 흐름은 다음과 같습니다.
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant BunServer
+    participant ServerService
+    participant WebSocketRouter
+    participant MessageController
+
+    Client->>BunServer: WebSocket 메시지 전송
+    Note right of Client: {"type": "send_message", "payload": {"content": "Hello"}}
+
+    BunServer->>ServerService: onMessage(ws, message)
+
+    ServerService->>WebSocketRouter: handleMessage(ws, message)
+
+    WebSocketRouter->>WebSocketRouter: 메시지 파싱 및 핸들러 탐색 ("send_message" -> "handleSendMessage")
+
+    WebSocketRouter->>MessageController: handleSendMessage(ws, payload)
+
+    MessageController->>MessageController: Zod로 payload 유효성 검사
+
+    MessageController-->>Client: 확인 메시지 전송
+    Note left of MessageController: {"type": "message_confirmation", ...}
+```
